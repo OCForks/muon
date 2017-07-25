@@ -100,18 +100,6 @@ source_set("browser") {
       "//extensions/browser",
     ]
   }
-
-  if (is_posix && !is_mac) {
-    sources += [
-      # "//chrome/app/chrome_crash_reporter_client.cc",
-      # "//chrome/app/chrome_crash_reporter_client.h",
-    ]
-    deps += [
-      "//components/crash/content/app",
-      "//components/crash/content/browser",
-      "//components/version_info:generate_version_info",
-    ]
-  }
 }
 
 source_set("tab_manager") {

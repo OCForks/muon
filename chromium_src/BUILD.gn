@@ -57,26 +57,28 @@ source_set("app") {
     ".",
   ]
 
-  sources = [
-    "//chrome/app/chrome_crash_reporter_client.cc",
-    "//chrome/app/chrome_crash_reporter_client.h",
-    "//chrome/app/chrome_crash_reporter_client_mac.mm",
-  ]
-  deps = [
-    "//base",
-    "//chrome/common",
-    "//chrome/installer",
-    "//components/metrics",
-    "//components/crash/content/app",
-    "//components/crash/content/browser",
-    "//content/public/common",
-  ]
-
-  if (is_linux) {
-    deps += [
-      "//components/upload_list",
-      "//components/version_info",
+  if (is_posix) {
+    sources = [
+      "//chrome/app/chrome_crash_reporter_client.cc",
+      "//chrome/app/chrome_crash_reporter_client.h",
+      "//chrome/app/chrome_crash_reporter_client_mac.mm",
     ]
+    deps = [
+      "//base",
+      "//chrome/common",
+      "//chrome/installer",
+      "//components/metrics",
+      "//components/crash/content/app",
+      "//components/crash/content/browser",
+      "//content/public/common",
+    ]
+
+    if (is_linux) {
+      deps += [
+        "//components/upload_list",
+        "//components/version_info",
+      ]
+    }
   }
 }
 
