@@ -422,9 +422,9 @@ void BraveContentBrowserClient::AppendExtraCommandLineSwitches(
       command_line, child_process_id);
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
-//  if (breakpad::IsCrashReporterEnabled()) {
-//    command_line->AppendSwitch(switches::kEnableCrashReporter);
-//  }
+ if (breakpad::IsCrashReporterEnabled()) {
+   command_line->AppendSwitch(switches::kEnableCrashReporter);
+ }
 #endif
 
   std::string process_type =

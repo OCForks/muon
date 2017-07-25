@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+// REF(bridiver) ChromeMainDelegate
+
 #include "atom/app/atom_main_delegate.h"
 
 #include <iostream>
@@ -13,10 +15,12 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/atom_command_line.h"
+#include "atom/common/atom_version.h"
 #include "atom/common/google_api_key.h"
 #include "atom/utility/atom_content_utility_client.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
@@ -27,11 +31,13 @@
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/common/application_info.h"
 #include "browser/brightray_paths.h"
+#include "chrome/child/child_profiling.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/crash_keys.h"
 #include "chrome/common/logging_chrome.h"
+#include "chrome/common/profiling.h"
 #include "chrome/common/trace_event_args_whitelist.h"
 #include "components/component_updater/component_updater_paths.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
@@ -39,6 +45,7 @@
 #include "content/public/common/content_switches.h"
 #include "extensions/common/constants.h"
 #include "extensions/features/features.h"
+#include "muon/app/muon_crash_reporter_client.h"
 #include "printing/features/features.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -71,13 +78,22 @@
 #if defined(OS_POSIX)
 #include <locale.h>
 #include <signal.h>
-#include "chrome/app/chrome_crash_reporter_client.h"
+#endif
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#include "components/crash/content/app/breakpad_linux.h"
+#endif
+
+#if defined(OS_MACOSX) || defined(OS_WIN)
+#include "components/crash/content/app/crashpad.h"
 #endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "brave/browser/brave_content_browser_client.h"
 #include "brave/renderer/brave_content_renderer_client.h"
 #endif
+
+#include "chrome/browser/metrics/chrome_metrics_service_accessor.h"
 
 namespace atom {
 
@@ -272,25 +288,33 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
-  brightray::MainDelegate::PreSandboxStartup();
-
   auto command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
       ::switches::kProcessType);
 
-#if defined(OS_POSIX)
-  // crash_reporter::SetCrashReporterClient(g_chrome_crash_client.Pointer());
-#endif
+  std::string product_name = ATOM_PRODUCT_NAME;
+  if (command_line->HasSwitch("muon_product_name"))
+    product_name = command_line->GetSwitchValueASCII("muon_product_name");
+
+  std::string product_version = ATOM_VERSION_STRING;
+  if (command_line->HasSwitch("muon_product_version"))
+    product_version = command_line->GetSwitchValueASCII("muon_product_version");
+
+  MuonCrashReporterClient* crash_client =
+      new MuonCrashReporterClient(product_name, product_version);
+  ANNOTATE_LEAKING_OBJECT_PTR(crash_client);
+  crash_reporter::SetCrashReporterClient(crash_client);
 
 #if defined(OS_MACOSX)
-#ifdef DEBUG
-  // disable os crash dumps in debug mode because they take forever
-  base::mac::DisableOSCrashDumps();
-#endif
   InitMacCrashReporter(command_line, process_type);
-#endif
-
-#if defined(OS_WIN)
+#elif defined(OS_POSIX) && !defined(OS_MACOSX)
+  // Zygote needs to call InitCrashReporter() in RunZygote().
+  if (process_type != switches::kZygoteProcess) {
+    breakpad::InitCrashReporter(process_type);
+  }
+#elif defined(OS_WIN)
+  install_static::InitializeProcessType();
+  breakpad::InitCrashReporter(process_type);
   child_process_logging::Init();
 #endif
 
@@ -322,40 +346,27 @@ void AtomMainDelegate::PreSandboxStartup() {
   }
 #endif
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
-  // Zygote needs to call InitCrashReporter() in RunZygote().
-  if (process_type != switches::kZygoteProcess) {
-//    breakpad::InitCrashReporter(process_type);
-  }
-#endif  // defined(OS_POSIX) && !defined(OS_MACOSX)
-
-  // Only append arguments for browser process.
-  if (!IsBrowserProcess(command_line))
-    return;
-
 #if defined(OS_LINUX)
-  // Disable setuid sandbox
-  command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+  if (!IsBrowserProcess(command_line)) {
+    // Disable setuid sandbox
+    command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+  }
 #endif
 
-#if defined(OS_WIN)
-  install_static::InitializeProcessType();
-#endif
+  crash_keys::SetCrashKeysFromCommandLine(*command_line);
+  brightray::MainDelegate::PreSandboxStartup();
 }
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
 void AtomMainDelegate::ZygoteForked() {
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(
-          switches::kEnableCrashReporter)) {
-    std::string process_type =
-        command_line->GetSwitchValueASCII(
-            switches::kProcessType);
-    // breakpad::InitCrashReporter(process_type);
-    // Reset the command line for the newly spawned process.
-    crash_keys::SetCrashKeysFromCommandLine(*command_line);
-  }
+  std::string process_type =
+      command_line->GetSwitchValueASCII(
+          switches::kProcessType);
+  breakpad::InitCrashReporter(process_type);
+  // Reset the command line for the newly spawned process.
+  crash_keys::SetCrashKeysFromCommandLine(*command_line);
 }
 #endif
 
@@ -432,14 +443,7 @@ void AtomMainDelegate::InitMacCrashReporter(
   const bool initial_client =
       browser_process || install_from_dmg_relauncher_process;
 
-  // TODO(bridiver) - unresolved symol issue
-  // crash_reporter::InitializeCrashpad(initial_client, process_type);
-
-  if (!browser_process) {
-    std::string metrics_client_id =
-        command_line->GetSwitchValueASCII(switches::kMetricsClientID);
-    crash_keys::SetMetricsClientIdFromGUID(metrics_client_id);
-  }
+  crash_reporter::InitializeCrashpad(initial_client, process_type);
 
   // Mac is packaged with a main app bundle and a helper app bundle.
   // The main app bundle should only be used for the browser process, so it

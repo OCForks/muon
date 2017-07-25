@@ -23,6 +23,8 @@
 #include "chrome/browser/status_icons/status_tray.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/component_updater/component_updater_service.h"
+#include "components/crash/content/app/crashpad.h"
+#include "components/metrics/metrics_pref_names.h"
 #include "components/password_manager/core/browser/password_manager.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_filter.h"
@@ -194,6 +196,9 @@ void BrowserProcessImpl::CreateLocalState() {
   CHECK(PathService::Get(chrome::FILE_LOCAL_STATE, &local_state_path));
   scoped_refptr<PrefRegistrySimple> pref_registry = new PrefRegistrySimple;
 
+  pref_registry->RegisterBooleanPref(
+      metrics::prefs::kMetricsReportingEnabled, true);
+
 #if defined(OS_WIN)
     password_manager::PasswordManager::RegisterLocalPrefs(pref_registry.get());
 #endif
@@ -205,6 +210,10 @@ void BrowserProcessImpl::CreateLocalState() {
                         local_state_task_runner_.get(),
                         std::unique_ptr<PrefFilter>()));
   local_state_ = factory.Create(pref_registry.get());
+
+  bool consented =
+      local_state_->GetBoolean(metrics::prefs::kMetricsReportingEnabled);
+  crash_reporter::SetUploadConsent(consented);
 }
 
 bool BrowserProcessImpl::created_local_state() const {
