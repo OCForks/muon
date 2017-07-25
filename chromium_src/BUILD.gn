@@ -48,6 +48,15 @@ config("chromium_src_config") {
 }
 
 source_set("app") {
+  configs += [
+    ":chromium_src_config",
+  ]
+
+  include_dirs = [
+    # force this to appear before the chromium root src dir
+    ".",
+  ]
+
   if (is_posix) {
     sources = [
       "//chrome/app/chrome_crash_reporter_client.cc",
@@ -55,10 +64,21 @@ source_set("app") {
       "//chrome/app/chrome_crash_reporter_client_mac.mm",
     ]
     deps = [
+      "//base",
+      "//chrome/common",
+      "//chrome/installer",
       "//components/metrics",
       "//components/crash/content/app",
       "//components/crash/content/browser",
+      "//content/public/common",
     ]
+
+    if (is_linux) {
+      deps += [
+        "//components/upload_list",
+        "//components/version_info",
+      ]
+    }
   }
 }
 
