@@ -2109,6 +2109,22 @@ index ef900bce6a8ae8500611ca76c1898d71c349f081..bde0cd50d24289981e99d47a5f3fc552
  
  # Windows' assembly is built with Yasm. The other platforms use the platform
  # assembler.
+diff --git a/third_party/crashpad/crashpad/handler/crash_report_upload_thread.cc b/third_party/crashpad/crashpad/handler/crash_report_upload_thread.cc
+index d77cdbadc482ab5bee13e1026869bc9f52c415a3..561ac592c7ac0498f6d82a61d8fe621281f760a3 100644
+--- a/third_party/crashpad/crashpad/handler/crash_report_upload_thread.cc
++++ b/third_party/crashpad/crashpad/handler/crash_report_upload_thread.cc
+@@ -268,7 +268,11 @@ void CrashReportUploadThread::ProcessPendingReport(
+         // If the most recent upload attempt occurred within the past hour,
+         // don’t attempt to upload the new report. If it happened longer ago,
+         // attempt to upload the report.
++#if defined(MUON_CHROMIUM_BUILD)
+         const int kUploadAttemptIntervalSeconds = 60 * 60;  // 1 hour
++#else
++        const int kUploadAttemptIntervalSeconds = 1 * 60;  // 1 min
++#endif
+         if (now - last_upload_attempt_time < kUploadAttemptIntervalSeconds) {
+           database_->SkipReportUpload(
+               report.uuid, Metrics::CrashSkippedReason::kUploadThrottled);
 diff --git a/third_party/widevine/cdm/BUILD.gn b/third_party/widevine/cdm/BUILD.gn
 index 9e744b9940e2c79366fae21f5652ee0fce830637..143385a2831ca5221a68b99bba65dc2927a241ac 100644
 --- a/third_party/widevine/cdm/BUILD.gn

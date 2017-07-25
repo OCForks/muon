@@ -4,6 +4,10 @@
 
 #include "muon/app/muon_crash_reporter_client.h"
 
+#include "chrome/browser/browser_process_impl.h"
+#include "components/metrics/metrics_pref_names.h"
+#include "components/prefs/pref_service.h"
+
 MuonCrashReporterClient::MuonCrashReporterClient(
     const std::string& product_name, const std::string& product_version)
     : product_name_(product_name),
@@ -19,15 +23,6 @@ void MuonCrashReporterClient::GetProductNameAndVersion(
   DCHECK(version);
   *product_name = product_name_.c_str();
   *version = product_version_.c_str();
-}
-#endif
-
-#if defined(OS_WIN) || defined(OS_MACOSX)
-bool MuonCrashReporterClient::ReportingIsEnforcedByPolicy(
-    bool* enable_uploads) {
-  // TODO(bridiver) - use a file to indicate that it should be turned off
-  *enable_uploads = true;
-  return true;
 }
 #endif
 

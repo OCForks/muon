@@ -22,11 +22,6 @@ class MuonCrashReporterClient : public ChromeCrashReporterClient {
 #if defined(OS_MACOSX)
   bool ShouldMonitorCrashHandlerExpensively() override;
 #endif
-
-#if defined(OS_WIN) || defined(OS_MACOSX)
-  bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled) override;
-#endif
-
   bool GetCollectStatsConsent() override;
 
  private:
