@@ -167,6 +167,7 @@ source_set("browser") {
     "//chrome/common",
     "//chrome/utility",
     "//components/certificate_transparency",
+    "//components/crash/content/app",
     "//components/data_usage/core",
     "//components/prefs",
     "//components/ssl_config",

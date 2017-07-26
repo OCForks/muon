@@ -213,7 +213,10 @@ void BrowserProcessImpl::CreateLocalState() {
 
   bool consented =
       local_state_->GetBoolean(metrics::prefs::kMetricsReportingEnabled);
+#if defined(OS_WIN) || defined(OS_MACOSX)
   crash_reporter::SetUploadConsent(consented);
+#else
+#endif
 }
 
 bool BrowserProcessImpl::created_local_state() const {

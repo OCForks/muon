@@ -78,6 +78,10 @@
 #include "components/spellcheck/browser/spellcheck_message_filter_platform.h"
 #endif
 
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#include "components/crash/content/app/breakpad_linux.h"
+#endif
+
 using content::BrowserThread;
 using extensions::AtomBrowserClientExtensionsPart;
 
