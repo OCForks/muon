@@ -237,6 +237,25 @@ base::FilePath InitializeUserDataDir() {
   return user_data_dir;
 }
 
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+void SIGTERMProfilingShutdown(int signal) {
+  Profiling::Stop();
+  struct sigaction sigact;
+  memset(&sigact, 0, sizeof(sigact));
+  sigact.sa_handler = SIG_DFL;
+  CHECK_EQ(sigaction(SIGTERM, &sigact, NULL), 0);
+  raise(signal);
+}
+
+void SetUpProfilingShutdownHandler() {
+  struct sigaction sigact;
+  sigact.sa_handler = SIGTERMProfilingShutdown;
+  sigact.sa_flags = SA_RESETHAND;
+  sigemptyset(&sigact.sa_mask);
+  CHECK_EQ(sigaction(SIGTERM, &sigact, NULL), 0);
+}
+#endif  // !defined(OS_MACOSX) && !defined(OS_ANDROID)
+
 }  // namespace
 
 AtomMainDelegate::AtomMainDelegate()
@@ -256,7 +275,15 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // there have more impact.
   const bool is_browser = !command_line->HasSwitch(switches::kProcessType);
   ObjcEvilDoers::ZombieEnable(true, is_browser ? 10000 : 1000);
+
+  SetUpBundleOverrides();
+  chrome::common::mac::EnableCFBundleBlocker();
 #endif
+
+#if !defined(CHROME_MULTIPLE_DLL_BROWSER)
+  ChildProfiling::ProcessStarted();
+#endif
+  Profiling::ProcessStarted();
 
   base::trace_event::TraceLog::GetInstance()->SetArgumentFilterPredicate(
       base::Bind(&IsTraceEventArgsWhitelisted));
@@ -279,10 +306,6 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   ContentSettingsPattern::SetNonWildcardDomainNonPortScheme(
       extensions::kExtensionScheme);
-
-#if defined(OS_MACOSX)
-  SetUpBundleOverrides();
-#endif
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
@@ -359,6 +382,13 @@ void AtomMainDelegate::PreSandboxStartup() {
 
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
 void AtomMainDelegate::ZygoteForked() {
+  ChildProfiling::ProcessStarted();
+  Profiling::ProcessStarted();
+  if (Profiling::BeingProfiled()) {
+    base::debug::RestartProfilingAfterFork();
+    SetUpProfilingShutdownHandler();
+  }
+
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
