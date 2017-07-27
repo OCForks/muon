@@ -332,12 +332,16 @@ void AtomMainDelegate::PreSandboxStartup() {
   InitMacCrashReporter(command_line, process_type);
 #elif defined(OS_POSIX) && !defined(OS_MACOSX)
   // Zygote needs to call InitCrashReporter() in RunZygote().
-  if (process_type != switches::kZygoteProcess) {
+  if (command_line->HasSwitch(switches::kEnableCrashReporter) &&
+      process_type != switches::kZygoteProcess) {
+    LOG(ERROR) << "enable crash reporter for " << process_type;
     breakpad::InitCrashReporter(process_type);
   }
 #elif defined(OS_WIN)
+  if (command_line->HasSwitch(switches::kEnableCrashReporter)
+    breakpad::InitCrashReporter(process_type);
+
   install_static::InitializeProcessType();
-  breakpad::InitCrashReporter(process_type);
   child_process_logging::Init();
 #endif
 
@@ -394,9 +398,11 @@ void AtomMainDelegate::ZygoteForked() {
   std::string process_type =
       command_line->GetSwitchValueASCII(
           switches::kProcessType);
-  breakpad::InitCrashReporter(process_type);
-  // Reset the command line for the newly spawned process.
-  crash_keys::SetCrashKeysFromCommandLine(*command_line);
+  if (command_line->HasSwitch(switches::kEnableCrashReporter)) {
+    breakpad::InitCrashReporter(process_type);
+    // Reset the command line for the newly spawned process.
+    crash_keys::SetCrashKeysFromCommandLine(*command_line);
+  }
 }
 #endif
 

@@ -932,6 +932,53 @@ index 257467a99132986f56d3ce098515afab24db7941..d8135a059b8621dbe925574b80645221
    // chrome::mojom::ProfileImport:
    void StartImport(const importer::SourceProfile& source_profile,
                     uint16_t items,
+diff --git a/components/crash/content/app/breakpad_linux.cc b/components/crash/content/app/breakpad_linux.cc
+index 0d3de65043a0b66fc1d3bc8fee578ae13179f611..93f10e5a838098c125a709b0939bf223897024b0 100644
+--- a/components/crash/content/app/breakpad_linux.cc
++++ b/components/crash/content/app/breakpad_linux.cc
+@@ -87,8 +87,10 @@ namespace breakpad {
+ 
+ namespace {
+ 
+-#if !defined(OS_CHROMEOS)
++#if !defined(OS_CHROMEOS) && defined(MUON_CHROMIUM_BUILD)
+ const char kUploadURL[] = "https://clients2.google.com/cr/report";
++#else
++const char kUploadURL[] = "https://laptop-updates.brave.com/1/crashes";
+ #endif
+ 
+ bool g_is_crash_reporter_enabled = false;
+@@ -1358,6 +1360,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+     header_content_type,
+     post_file,
+     kUploadURL,
++    "--quiet",
+     "--timeout=10",  // Set a timeout so we don't hang forever.
+     "--tries=1",     // Don't retry if the upload fails.
+     "-O",  // Output reply to the file descriptor path.
+@@ -1411,6 +1414,9 @@ size_t WaitForCrashReportUploadProcess(int fd, size_t bytes_to_read,
+ // |buf| should be |expected_len| + 1 characters in size and nullptr terminated.
+ bool IsValidCrashReportId(const char* buf, size_t bytes_read,
+                           size_t expected_len) {
++#if !defined(MUON_CHROMIUM_BUILD)
++  return my_strcmp(buf, "OK") == 0;
++#endif
+   if (bytes_read != expected_len) {
+     static const char msg[] = "Unexpected crash report id length\n";
+     WriteLog(msg, sizeof(msg) - 1);
+@@ -1883,8 +1889,11 @@ void HandleCrashDump(const BreakpadInfo& info) {
+       // Helper process.
+       if (upload_child > 0) {
+         IGNORE_RET(sys_close(fds[1]));  // Close write end of pipe.
+-
++#if defined(MUON_CHROMIUM_BUILD)
+         const size_t kCrashIdLength = 16;
++#else
++        const size_t kCrashIdLength = 2;
++#endif
+         char id_buf[kCrashIdLength + 1];
+         size_t bytes_read =
+             WaitForCrashReportUploadProcess(fds[0], kCrashIdLength, id_buf);
 diff --git a/components/crash/content/app/crashpad_mac.mm b/components/crash/content/app/crashpad_mac.mm
 index 485c2b4b3e98244f6303c92394dd0f6eab7263c6..fab01cb6f7cac899dc0ae475feeebe518485609a 100644
 --- a/components/crash/content/app/crashpad_mac.mm

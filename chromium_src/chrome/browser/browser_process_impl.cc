@@ -197,7 +197,7 @@ void BrowserProcessImpl::CreateLocalState() {
   scoped_refptr<PrefRegistrySimple> pref_registry = new PrefRegistrySimple;
 
   pref_registry->RegisterBooleanPref(
-      metrics::prefs::kMetricsReportingEnabled, true);
+      metrics::prefs::kMetricsReportingEnabled, false);
 
 #if defined(OS_WIN)
     password_manager::PasswordManager::RegisterLocalPrefs(pref_registry.get());
@@ -213,9 +213,19 @@ void BrowserProcessImpl::CreateLocalState() {
 
   bool consented =
       local_state_->GetBoolean(metrics::prefs::kMetricsReportingEnabled);
-#if defined(OS_WIN) || defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   crash_reporter::SetUploadConsent(consented);
 #else
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (!consented)
+    command_line->AppendSwitch(switches::kDisableBreakpad);
+#endif
+
+#if !defined(OS_MACOSX)
+  std::string process_type =
+      command_line->GetSwitchValueASCII(switches::kProcessType);
+  LOG(ERROR) << "enable crash reporter for " << process_type;
+  breakpad::InitCrashReporter(process_type);
 #endif
 }
 

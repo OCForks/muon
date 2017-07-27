@@ -74,6 +74,13 @@ source_set("browser") {
     "//third_party/WebKit/public:resources",
   ]
 
+  if (is_linux) {
+    deps += [
+      "//components/crash/content/app",
+      "//components/crash/content/browser",
+    ]
+  }
+
   if (enable_basic_printing || enable_print_preview) {
     deps += [
       "//components/printing/browser",

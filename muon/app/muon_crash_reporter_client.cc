@@ -5,6 +5,7 @@
 #include "muon/app/muon_crash_reporter_client.h"
 
 #include "chrome/browser/browser_process_impl.h"
+#include "components/crash/content/app/crashpad.h"
 #include "components/metrics/metrics_pref_names.h"
 #include "components/prefs/pref_service.h"
 
@@ -33,5 +34,11 @@ bool MuonCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
 #endif
 
 bool MuonCrashReporterClient::GetCollectStatsConsent() {
-  return true;
+#if defined(OS_WIN) || defined(OS_MACOSX)
+  return crash_reporter::GetUploadsEnabled();
+#else
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  return command_line->HasSwitch(switches::kEnableCrashReporter) ||
+      !command_line->HasSwitch(switches::kDisableBreakpad);
+#endif
 }
