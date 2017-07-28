@@ -59,6 +59,13 @@
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
+#if defined(USE_AURA)
+#include "chrome/browser/lifetime/application_lifetime.h"
+#include "content/public/common/service_manager_connection.h"
+#include "services/service_manager/runner/common/client_util.h"
+
+#endif
+
 namespace atom {
 
 namespace {

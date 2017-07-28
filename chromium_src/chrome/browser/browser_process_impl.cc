@@ -66,6 +66,15 @@
 #include "components/crash/content/app/breakpad_win.h"
 #endif
 
+#if defined(USE_X11) || defined(OS_WIN) || defined(USE_OZONE)
+// How long to wait for the File thread to complete during EndSession, on Linux
+// and Windows. We have a timeout here because we're unable to run the UI
+// messageloop and there's some deadlock risk. Our only option is to exit
+// anyway.
+static constexpr base::TimeDelta kEndSessionTimeout =
+    base::TimeDelta::FromSeconds(10);
+#endif
+
 using content::ChildProcessSecurityPolicy;
 using content::PluginService;
 
