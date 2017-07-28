@@ -27,7 +27,8 @@ declare_args() {
   electron_google_api_endpoint = ""
 }
 
-include_dirs_ = [
+# be warned changing these will cause a full rebuild!!
+muon_include_dirs_ = [
   "//electron/chromium_src",
   "//electron",
   "$root_gen_dir/electron",
@@ -36,12 +37,12 @@ include_dirs_ = [
 ]
 
 config("muon_include_dirs") {
-  include_dirs = include_dirs_
+  include_dirs = muon_include_dirs_
 }
 
 
 config("electron_config") {
-  include_dirs = include_dirs_ + [
+  include_dirs = muon_include_dirs_ + [
     "//skia/config",
     "//third_party/skia/include/core",
     "$root_gen_dir/chrome",
