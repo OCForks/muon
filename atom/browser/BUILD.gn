@@ -8,11 +8,6 @@ source_set("browser") {
     "//electron/build:electron_config",
   ]
 
-  include_dirs = [
-    # make sure chromium_src comes before the chrome src root
-    "//electron/chromium_src",
-  ]
-
   public_deps = [
     "//content/public/browser",
     "//content/public/common",
@@ -30,6 +25,8 @@ source_set("browser") {
     "//storage/browser",
     "//storage/common",
     "//components/prefs",
+    "//components/metrics",
+    "//components/metrics:profiler_content",
     ":importer",
   ]
 
@@ -300,15 +297,6 @@ source_set("browser") {
       "ui/drag_util_views.cc",
     ]
   }
-  if (enable_webrtc) {
-    sources += [
-      "api/atom_api_desktop_capturer.cc",
-      "api/atom_api_desktop_capturer.h",
-    ]
-    deps += [
-      "//third_party/webrtc/modules/desktop_capture",
-    ]
-  }
 
   if (enable_extensions) {
     sources += [
@@ -341,11 +329,6 @@ source_set("browser") {
 source_set("importer") {
   public_configs = [
     "//electron/build:electron_config"
-  ]
-
-  include_dirs = [
-    # make sure chromium_src comes before the chrome src root
-    "//electron/chromium_src",
   ]
 
   sources = [

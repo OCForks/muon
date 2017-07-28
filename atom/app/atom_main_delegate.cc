@@ -56,7 +56,6 @@
 #include <malloc.h>
 #include <algorithm>
 #include "base/debug/close_handle_hook_win.h"
-#include "chrome/browser/downgrade/user_data_downgrade.h"
 #include "chrome/child/v8_breakpad_support_win.h"
 #include "chrome/common/child_process_logging.h"
 #include "chrome/install_static/install_details.h"
@@ -92,8 +91,6 @@
 #include "brave/browser/brave_content_browser_client.h"
 #include "brave/renderer/brave_content_renderer_client.h"
 #endif
-
-#include "chrome/browser/metrics/chrome_metrics_service_accessor.h"
 
 namespace atom {
 

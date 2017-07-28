@@ -33,6 +33,8 @@ config("electron_config") {
     "//skia/config",
     "//third_party/skia/include/core",
     "$root_gen_dir/electron",
+    "$root_gen_dir/chrome",
+    "$root_gen_dir/components/strings",
     "//electron/vendor/brightray",
     "//electron/vendor/native_mate",
     "//electron/vendor/node/src",
@@ -41,6 +43,8 @@ config("electron_config") {
     # The `node.h` is using `#include"ares.h"`.
     "//electron/vendor/node/deps/cares/include",
     "//electron/vendor",
+    "//",
+    root_gen_dir,
   ]
 
   defines = [

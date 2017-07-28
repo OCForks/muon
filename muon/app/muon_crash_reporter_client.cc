@@ -4,6 +4,8 @@
 
 #include "muon/app/muon_crash_reporter_client.h"
 
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "components/crash/content/app/crashpad.h"
 #include "components/metrics/metrics_pref_names.h"
