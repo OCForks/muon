@@ -17,7 +17,21 @@ binding.registerCustomHook(function (bindingsAPI, extensionId) {
   })
 
   apiFunctions.setHandleRequest('get', function (windowId, getInfo, cb) {
-    console.warn('chrome.windows.get is not supported yet')
+    if (arguments.length === 1) {
+      cb = arguments[0]
+    } else if (arguments.length == 2) {
+      getInfo = arguments[0]
+      cb = arguments[1]
+    } else {
+      windowId = arguments[0]
+      getInfo = arguments[1]
+      cb = arguments[2]
+    }
+    var responseId = ++id
+    ipc.once('chrome-windows-get-response-' + responseId, function (evt, win) {
+      cb(win)
+    })
+    ipc.send('chrome-windows-get', responseId, windowId, getInfo)
   })
 
   apiFunctions.setHandleRequest('create', function (createData, cb) {
