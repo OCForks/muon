@@ -224,8 +224,6 @@ void ChromeExtensionsDispatcherDelegate::PopulateSourceMap(
       IDR_ATOM_WEB_VIEW_EVENTS_API_BINDINGS_JS);
   source_map->RegisterSource("guestViewApiMethods",
       IDR_ATOM_GUEST_VIEW_API_BINDINGS_JS);
-  source_map->RegisterSource("cryptotokenPrivate",
-      IDR_ATOM_CRYPTOTOKEN_PRIVATE_BINDINGS_JS);
 }
 
 void ChromeExtensionsDispatcherDelegate::RequireAdditionalModules(
